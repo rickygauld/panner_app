@@ -558,14 +558,6 @@ document.getElementById('nameInput').addEventListener('input', (e) => {
   checkFormCompletion();
 });
 
-document.querySelectorAll('input[name="activity"]').forEach(checkbox => {
-  checkbox.addEventListener('change', checkFormCompletion);
-});
-
-document.querySelectorAll('.date-check input[type="checkbox"]').forEach(checkbox => {
-  checkbox.addEventListener('change', checkFormCompletion);
-});
-
 document.getElementById('submitBtn').addEventListener('click', () => {
   const number = document.getElementById('nameInput').value.trim();
   
@@ -675,6 +667,15 @@ document.getElementById('backBtn')?.addEventListener('click', () => {
 });
 
 initializeDates();
+
+// Add event listeners for activities and dates after they're created
+document.querySelectorAll('input[name="activity"]').forEach(checkbox => {
+  checkbox.addEventListener('change', checkFormCompletion);
+});
+
+document.querySelectorAll('.date-check input[type="checkbox"]').forEach(checkbox => {
+  checkbox.addEventListener('change', checkFormCompletion);
+});
 </script>
 
 </body>
