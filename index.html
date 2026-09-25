@@ -377,6 +377,25 @@ input[type="number"]:focus {
   background: #E5E5E5;
 }
 
+.reset-btn {
+  background: transparent;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 400;
+  margin-top: 12px;
+  width: 100%;
+  color: #999;
+  transition: all 0.2s;
+}
+
+.reset-btn:hover {
+  color: var(--lock-red);
+  background: rgba(232, 160, 160, 0.08);
+}
+
 .error {
   color: var(--lock-red);
   font-size: 12px;
@@ -471,6 +490,7 @@ input[type="number"]:focus {
     </div>
     <div id="resultsContent"></div>
     <button class="back-btn" id="backBtn">Back to form</button>
+    <button class="reset-btn" id="resetBtn">Clear all responses</button>
   </div>
 </div>
 
@@ -654,9 +674,9 @@ function showResults(showThankYou = false) {
   const peopleCard = document.createElement('div');
   peopleCard.className = 'result-card';
   peopleCard.innerHTML = `
-    <h3>Who's coming</h3>
+    <h3>Contact</h3>
     <div class="votes">
-      ${allVotes.map(v => `<div class="vote-badge">Person #${v.number}</div>`).join('')}
+      ${allVotes.map(v => `<div class="vote-badge">${v.number}</div>`).join('')}
     </div>
   `;
   resultsContent.appendChild(peopleCard);
@@ -664,6 +684,13 @@ function showResults(showThankYou = false) {
 
 document.getElementById('backBtn')?.addEventListener('click', () => {
   location.reload();
+});
+
+document.getElementById('resetBtn')?.addEventListener('click', () => {
+  if (confirm('Are you sure you want to clear all responses? This cannot be undone.')) {
+    localStorage.removeItem('eventVotes');
+    location.reload();
+  }
 });
 
 initializeDates();
