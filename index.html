@@ -781,6 +781,25 @@ document.getElementById('submitBtn').addEventListener('click', async (e) => {
 document.getElementById('viewResultsBtn')?.addEventListener('click', async () => {
   await showResults(false);
 });
+
+// Add reset button listener
+document.getElementById('resetBtn')?.addEventListener('click', async () => {
+  if (confirm('Are you sure you want to clear all responses? This cannot be undone.')) {
+    try {
+      const snapshot = await db.collection('votes').get();
+      const batch = db.batch();
+      snapshot.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+      console.log('All votes cleared');
+      location.reload();
+    } catch (error) {
+      console.error('Error clearing votes:', error);
+      alert('Error clearing votes. Please try again.');
+    }
+  }
+});
 </script>
 
 </body>
