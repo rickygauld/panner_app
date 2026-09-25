@@ -601,6 +601,11 @@ document.getElementById('backBtn')?.addEventListener('click', () => {
   location.reload();
 });
 
+// Define showResults as a placeholder - will be overridden by Firebase version
+let showResults = async function(showThankYou = false) {
+  console.log('showResults called');
+};
+
 initializeDates();
 
 // Add event listeners for activities and dates after they're created
@@ -613,9 +618,9 @@ document.querySelectorAll('.date-check input[type="checkbox"]').forEach(checkbox
 });
 </script>
 
-<!-- Firebase Scripts -->
-<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js"></script>
+<!-- Firebase Scripts (Compat Version) -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
 <script>
 // Firebase Configuration
@@ -629,7 +634,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = firebase.initializeApp(firebaseConfig);
+firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // Save vote to Firestore instead of localStorage
@@ -659,7 +664,6 @@ async function loadVotesFromFirebase() {
 }
 
 // Update showResults to use Firebase data
-const originalShowResults = showResults;
 showResults = async function(showThankYou = false) {
   document.getElementById('formContainer').style.display = 'none';
   document.getElementById('resultsContainer').style.display = 'block';
@@ -729,22 +733,33 @@ showResults = async function(showThankYou = false) {
 };
 
 // Update submit button to use Firebase
-document.getElementById('submitBtn').addEventListener('click', async () => {
+document.getElementById('submitBtn').addEventListener('click', async (e) => {
+  e.preventDefault();
+  console.log('Submit button clicked');
+  
   const number = document.getElementById('nameInput').value.trim();
+  console.log('Number:', number);
   
   if (number.length !== 10) {
+    console.log('Number not 10 digits');
     return;
   }
   
   const activities = Array.from(document.querySelectorAll('input[name="activity"]:checked'))
     .map(cb => cb.value);
+  console.log('Activities:', activities);
+  
   if (activities.length === 0) {
+    console.log('No activities selected');
     return;
   }
   
   const selectedDates = Array.from(document.querySelectorAll('.date-check input[type="checkbox"]:checked'))
     .map(cb => cb.value);
+  console.log('Dates:', selectedDates);
+  
   if (selectedDates.length === 0) {
+    console.log('No dates selected');
     return;
   }
   
@@ -755,8 +770,11 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
     timestamp: new Date().toISOString()
   };
   
+  console.log('Saving vote:', vote);
   await saveVoteToFirebase(vote);
+  console.log('Vote saved, showing results');
   await showResults(true);
+  console.log('Results displayed');
 });
 
 // Update View Results button to use Firebase
