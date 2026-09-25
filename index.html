@@ -309,6 +309,14 @@ input[type="number"]:focus {
   text-align: center;
 }
 
+.results-btn-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 20px;
+}
+
 .thank-you-message {
   background: rgba(255, 255, 255, 0.9);
   border-radius: 16px;
@@ -373,6 +381,13 @@ input[type="number"]:focus {
   width: 100%;
 }
 
+.results-btn-group .back-btn {
+  margin-top: 0;
+  width: auto;
+  min-width: 120px;
+  margin: 0;
+}
+
 .back-btn:hover {
   background: #E5E5E5;
 }
@@ -380,20 +395,22 @@ input[type="number"]:focus {
 .reset-btn {
   background: transparent;
   border: none;
-  padding: 10px 16px;
-  border-radius: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 400;
   margin-top: 12px;
-  width: 100%;
-  color: #999;
+  color: #DDD;
   transition: all 0.2s;
+  opacity: 0.4;
+  text-decoration: none;
 }
 
 .reset-btn:hover {
   color: var(--lock-red);
   background: rgba(232, 160, 160, 0.08);
+  opacity: 1;
 }
 
 .error {
@@ -489,8 +506,10 @@ input[type="number"]:focus {
       <p>Your vote has been recorded.</p>
     </div>
     <div id="resultsContent"></div>
-    <button class="back-btn" id="backBtn">Back to form</button>
-    <button class="reset-btn" id="resetBtn">Clear all responses</button>
+    <div class="results-btn-group">
+      <button class="back-btn" id="backBtn">Back to form</button>
+      <button class="reset-btn" id="resetBtn">reset</button>
+    </div>
   </div>
 </div>
 
@@ -504,7 +523,6 @@ const DECLINE_MESSAGES = [
 ];
 
 let declineCount = 0;
-let votes = [];
 
 function generateDateRange() {
   const start = new Date(2026, 8, 24);
@@ -578,43 +596,92 @@ document.getElementById('nameInput').addEventListener('input', (e) => {
   checkFormCompletion();
 });
 
-document.getElementById('submitBtn').addEventListener('click', () => {
-  const number = document.getElementById('nameInput').value.trim();
-  
-  if (number.length !== 10) {
-    return;
-  }
-  
-  const activities = Array.from(document.querySelectorAll('input[name="activity"]:checked'))
-    .map(cb => cb.value);
-  if (activities.length === 0) {
-    return;
-  }
-  
-  const selectedDates = Array.from(document.querySelectorAll('.date-check input[type="checkbox"]:checked'))
-    .map(cb => cb.value);
-  if (selectedDates.length === 0) {
-    return;
-  }
-  
-  const vote = {
-    number,
-    activities,
-    dates: selectedDates,
-    timestamp: new Date().toISOString()
-  };
-  
-  votes.push(vote);
-  localStorage.setItem('eventVotes', JSON.stringify(votes));
-  
-  showResults(true);
-});
-
 document.getElementById('viewResultsBtn')?.addEventListener('click', () => {
   showResults(false);
 });
 
-function showResults(showThankYou = false) {
+
+document.getElementById('backBtn')?.addEventListener('click', () => {
+  location.reload();
+});
+
+document.getElementById('resetBtn')?.addEventListener('click', async () => {
+  if (confirm('Are you sure you want to clear all responses? This cannot be undone.')) {
+    try {
+      const snapshot = await db.collection('votes').get();
+      const batch = db.batch();
+      snapshot.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+      location.reload();
+    } catch (error) {
+      console.error('Error clearing votes:', error);
+      alert('Error clearing votes. Please try again.');
+    }
+  }
+});
+
+initializeDates();
+
+// Add event listeners for activities and dates after they're created
+document.querySelectorAll('input[name="activity"]').forEach(checkbox => {
+  checkbox.addEventListener('change', checkFormCompletion);
+});
+
+document.querySelectorAll('.date-check input[type="checkbox"]').forEach(checkbox => {
+  checkbox.addEventListener('change', checkFormCompletion);
+});
+</script>
+
+<!-- Firebase Scripts -->
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js"></script>
+
+<script>
+// Firebase Configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyA2bcnOZaSBaYFgqVFjHBJMlitZJ_FI3XI",
+  authDomain: "planner-app-99aa3.firebaseapp.com",
+  projectId: "planner-app-99aa3",
+  storageBucket: "planner-app-99aa3.firebasestorage.app",
+  messagingSenderId: "377968852763",
+  appId: "1:377968852763:web:b7dec6050cbfa33d22ddbe"
+};
+
+// Initialize Firebase
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Save vote to Firestore instead of localStorage
+async function saveVoteToFirebase(vote) {
+  try {
+    await db.collection('votes').add(vote);
+    console.log('Vote saved to Firebase');
+  } catch (error) {
+    console.error('Error saving vote:', error);
+    alert('Error saving vote. Please try again.');
+  }
+}
+
+// Load all votes from Firestore
+async function loadVotesFromFirebase() {
+  try {
+    const snapshot = await db.collection('votes').get();
+    const allVotes = [];
+    snapshot.forEach(doc => {
+      allVotes.push(doc.data());
+    });
+    return allVotes;
+  } catch (error) {
+    console.error('Error loading votes:', error);
+    return [];
+  }
+}
+
+// Update showResults to use Firebase data
+const originalShowResults = showResults;
+showResults = async function(showThankYou = false) {
   document.getElementById('formContainer').style.display = 'none';
   document.getElementById('resultsContainer').style.display = 'block';
   
@@ -622,7 +689,7 @@ function showResults(showThankYou = false) {
     document.getElementById('thankYouMessageBox').style.display = 'none';
   }
   
-  const allVotes = JSON.parse(localStorage.getItem('eventVotes') || '[]');
+  const allVotes = await loadVotesFromFirebase();
   
   const activityCounts = {};
   const dateCounts = {};
@@ -680,28 +747,43 @@ function showResults(showThankYou = false) {
     </div>
   `;
   resultsContent.appendChild(peopleCard);
-}
+};
 
-document.getElementById('backBtn')?.addEventListener('click', () => {
-  location.reload();
-});
-
-document.getElementById('resetBtn')?.addEventListener('click', () => {
-  if (confirm('Are you sure you want to clear all responses? This cannot be undone.')) {
-    localStorage.removeItem('eventVotes');
-    location.reload();
+// Update submit button to use Firebase
+document.getElementById('submitBtn').removeEventListener('click', arguments.callee);
+document.getElementById('submitBtn').addEventListener('click', async () => {
+  const number = document.getElementById('nameInput').value.trim();
+  
+  if (number.length !== 10) {
+    return;
   }
+  
+  const activities = Array.from(document.querySelectorAll('input[name="activity"]:checked'))
+    .map(cb => cb.value);
+  if (activities.length === 0) {
+    return;
+  }
+  
+  const selectedDates = Array.from(document.querySelectorAll('.date-check input[type="checkbox"]:checked'))
+    .map(cb => cb.value);
+  if (selectedDates.length === 0) {
+    return;
+  }
+  
+  const vote = {
+    number,
+    activities,
+    dates: selectedDates,
+    timestamp: new Date().toISOString()
+  };
+  
+  await saveVoteToFirebase(vote);
+  showResults(true);
 });
 
-initializeDates();
-
-// Add event listeners for activities and dates after they're created
-document.querySelectorAll('input[name="activity"]').forEach(checkbox => {
-  checkbox.addEventListener('change', checkFormCompletion);
-});
-
-document.querySelectorAll('.date-check input[type="checkbox"]').forEach(checkbox => {
-  checkbox.addEventListener('change', checkFormCompletion);
+// Update View Results button to use Firebase
+document.getElementById('viewResultsBtn')?.addEventListener('click', async () => {
+  showResults(false);
 });
 </script>
 
