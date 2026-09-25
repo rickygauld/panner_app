@@ -596,30 +596,9 @@ document.getElementById('nameInput').addEventListener('input', (e) => {
   checkFormCompletion();
 });
 
-document.getElementById('viewResultsBtn')?.addEventListener('click', () => {
-  showResults(false);
-});
-
 
 document.getElementById('backBtn')?.addEventListener('click', () => {
   location.reload();
-});
-
-document.getElementById('resetBtn')?.addEventListener('click', async () => {
-  if (confirm('Are you sure you want to clear all responses? This cannot be undone.')) {
-    try {
-      const snapshot = await db.collection('votes').get();
-      const batch = db.batch();
-      snapshot.forEach(doc => {
-        batch.delete(doc.ref);
-      });
-      await batch.commit();
-      location.reload();
-    } catch (error) {
-      console.error('Error clearing votes:', error);
-      alert('Error clearing votes. Please try again.');
-    }
-  }
 });
 
 initializeDates();
@@ -750,7 +729,6 @@ showResults = async function(showThankYou = false) {
 };
 
 // Update submit button to use Firebase
-document.getElementById('submitBtn').removeEventListener('click', arguments.callee);
 document.getElementById('submitBtn').addEventListener('click', async () => {
   const number = document.getElementById('nameInput').value.trim();
   
@@ -778,12 +756,12 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
   };
   
   await saveVoteToFirebase(vote);
-  showResults(true);
+  await showResults(true);
 });
 
 // Update View Results button to use Firebase
 document.getElementById('viewResultsBtn')?.addEventListener('click', async () => {
-  showResults(false);
+  await showResults(false);
 });
 </script>
 
